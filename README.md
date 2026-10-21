@@ -3,8 +3,22 @@
 Open-source replacement for the "KMISE LOOP&DRUM" PC software for the YUER **XS04 LOOP&DRUM**
 looper (also sold as lotmusic, Flamma, Donner…). It adds bulk export, which the vendor app lacks.
 
+## Install
+
+A single binary per platform, with libusb built in. Nothing else to install.
+
+```sh
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/brohd11/kmise-looper-client/main/install.sh | sh
 ```
-pip install -e .
+```powershell
+# Windows
+irm https://raw.githubusercontent.com/brohd11/kmise-looper-client/main/install.ps1 | iex
+```
+
+## Use
+
+```
 kmise info
 kmise list [--all]
 kmise export --all -o backup/        # or: kmise export 3 7 10-15
@@ -13,12 +27,11 @@ kmise delete 5                       # asks for confirmation; --all deletes ever
 ```
 
 Close the vendor app first, since only one program can claim the USB interface.
+Exports are 24-bit stereo 44.1 kHz WAV, bit-exact with what the pedal stores.
 
 ## Platform setup
 
-The pedal is a vendor-class USB device that speaks the same protocol to every OS. The Windows and
-Mac vendor apps are the same code base. `libusb-package` bundles libusb, so nothing else is needed
-except as noted below.
+The pedal is a vendor-class USB device that speaks the same protocol to every OS.
 
 | OS | Setup |
 |---|---|
@@ -32,10 +45,37 @@ sudo udevadm control --reload && sudo udevadm trigger
 # then replug the pedal
 ```
 
-If no bundled libusb wheel exists for your platform, install the system libusb
-(`apt install libusb-1.0-0`, `brew install libusb`). It's picked up automatically.
+## Development
 
-Exports are 24-bit stereo 44.1 kHz WAV, bit-exact with what the pedal stores.
+Go, with [gousb](https://github.com/google/gousb) (cgo + libusb). Packages:
+
+| Package | Role |
+|---|---|
+| `protocol` | packet framing, payload parsing, WAV header (no I/O) |
+| `audio` | audio file → pedal PCM (WAV natively, ffmpeg fallback) |
+| `device` | USB access; the only package that touches libusb |
+| `looper` | operations with their safety checks, shared by the CLI and any future TUI/GUI |
+| `cmd` | the `kmise` CLI |
+
+Building needs a C compiler and a static libusb, which `scripts/build-libusb.sh` builds:
+
+```sh
+# Windows: in an MSYS2 UCRT64 shell with
+#   pacman -S make bzip2 diffutils mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkgconf
+eval "$(bash scripts/build-libusb.sh .libusb)"
+make build      # -> build/<os>-<arch>/kmise
+make test
+```
+
+`protocol`, `audio` and `looper` don't need cgo: `go test ./protocol ./audio ./looper`.
+
+Shared install scripts, the makefile body and `cliff.toml` come from the `sh-templates`
+submodule: `./render-go.sh` (or `--check`). `test.yml` and `release.yml` are custom, because
+the shared workflows cross-compile with `CGO_ENABLED=0`. Releases build natively on each OS;
+push a `v*` tag.
+
+The original Python implementation (`kmise/`, `pip install -e .`) is kept as a reference until
+the Go port is verified on hardware.
 
 - Protocol: [docs/protocol.md](docs/protocol.md)
 - Firmware notes: [docs/firmware_recon.md](docs/firmware_recon.md)

@@ -71,6 +71,10 @@ There are 40 slots (0–39).
 - Import: the app decodes any format with FFmpeg and resamples to `S32` stereo 44.1 kHz
   (`swr_alloc_set_opts` @ `0x403939`), then keeps bytes 1–3 of each sample, which gives the
   same 24-bit LE stereo format. The buffer is capped at `0x3C8FE80` bytes (240 s).
+- The pedal stores audio in **128-frame blocks**. An imported length is rounded up and the
+  tail is zero-filled: a 44 100-frame import is listed and exported as 44 160 frames, with all
+  44 100 frames bit-exact (hardware round trip, 2026-10-21). Recordings made on the pedal are
+  also multiples of 128 frames.
 
 ## Export sequence
 

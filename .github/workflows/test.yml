@@ -1,0 +1,66 @@
+# Custom (not rendered from sh-templates): gousb needs cgo + libusb, so each runner builds a
+# static libusb first. The remaining steps mirror sh-templates/go/templates/test.template.yml.
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            shell: bash
+          - os: windows-latest
+            shell: msys2 {0}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: UCRT64
+          path-type: inherit
+          install: >-
+            make bzip2 diffutils mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkgconf
+
+      - name: Build static libusb
+        run: bash scripts/build-libusb.sh "$RUNNER_TEMP/libusb"
+
+      - name: Check go.mod/go.sum are tidy
+        if: matrix.os == 'ubuntu-latest'
+        run: go mod tidy -diff
+
+      # gofmt reports by printing paths and always exits 0, so an empty output is the
+      # pass and the check has to be spelled out rather than run bare.
+      - name: Check formatting
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "unformatted -- run gofmt -w ."
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Check rendered templates
+        if: matrix.os == 'ubuntu-latest'
+        run: bash ./render-go.sh --check
+
+      - name: Vet
+        if: matrix.os == 'ubuntu-latest'
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...

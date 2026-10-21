@@ -17,6 +17,13 @@ Enigma Virtual Box bundle). Addresses refer to the unpacked main exe (image base
 The vendor app keeps one async IN transfer (512 bytes) permanently resubmitted, and
 issues OUT transfers as needed.
 
+## Platforms
+
+The macOS build (`KMISE LOOP&DRUM V1.0.1 Setup_mac.dmg`, an Intel x86-64 Mach-O) is the same
+code base. It has an identical `UsbDevice` moc method table, the same magic/trailer constants, the
+same `cmd & 0x7F` dispatch over commands 0–7, the same WAV header template, and statically linked
+libusb. The protocol is OS-independent.
+
 ## Framing (both directions)
 
 Every command or response is exactly 512 bytes:

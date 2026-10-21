@@ -13,7 +13,27 @@ kmise delete 5                       # asks for confirmation; --all deletes ever
 ```
 
 Close the vendor app first, since only one program can claim the USB interface.
-No driver install is needed: the pedal binds to Windows' built-in WinUSB.
+
+## Platform setup
+
+The pedal is a vendor-class USB device that speaks the same protocol to every OS. The Windows and
+Mac vendor apps are the same code base. `libusb-package` bundles libusb, so nothing else is needed
+except as noted below.
+
+| OS | Setup |
+|---|---|
+| Windows | Nothing. The pedal binds to the built-in WinUSB driver automatically. |
+| macOS | Nothing. |
+| Linux | For non-root access, install the udev rule (below). |
+
+```sh
+sudo cp udev/60-kmise.rules /etc/udev/rules.d/
+sudo udevadm control --reload && sudo udevadm trigger
+# then replug the pedal
+```
+
+If no bundled libusb wheel exists for your platform, install the system libusb
+(`apt install libusb-1.0-0`, `brew install libusb`). It's picked up automatically.
 
 Exports are 24-bit stereo 44.1 kHz WAV, bit-exact with what the pedal stores.
 

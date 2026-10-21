@@ -1,0 +1,2 @@
+# YUER XS04 LOOP&DRUM looper: let the logged-in user access it without root.
+SUBSYSTEM=="usb", ATTR{idVendor}=="bb00", ATTR{idProduct}=="0001", MODE="0660", TAG+="uaccess"

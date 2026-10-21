@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import struct
+import sys
 import time
 from typing import Callable
 
@@ -18,21 +19,50 @@ class DeviceError(RuntimeError):
     pass
 
 
+def _find():
+    """Prefer the libusb bundled by libusb-package; fall back to the system libusb."""
+    try:
+        dev = libusb_package.find(idVendor=p.VID, idProduct=p.PID)
+    except usb.core.NoBackendError:
+        dev = None
+    if dev is None:
+        try:
+            dev = usb.core.find(idVendor=p.VID, idProduct=p.PID)
+        except usb.core.NoBackendError as e:
+            raise DeviceError("no libusb backend found; install libusb-1.0") from e
+    return dev
+
+
+def _access_hint() -> str:
+    if sys.platform.startswith("linux"):
+        return ("install udev/60-kmise.rules (see README) or run as root, "
+                "and close any other program using the pedal")
+    return "close the KMISE app or any other program using the pedal"
+
+
 class Device:
     def __init__(self, timeout_ms: int = 2000):
-        dev = libusb_package.find(idVendor=p.VID, idProduct=p.PID)
+        dev = _find()
         if dev is None:
             raise DeviceError("XS04 LOOP&DRUM not found (is it plugged in and powered on?)")
         self.dev = dev
         self.timeout_ms = timeout_ms
+        if sys.platform != "win32":
+            try:  # nothing should bind a vendor-class interface, but be safe
+                if dev.is_kernel_driver_active(0):
+                    dev.detach_kernel_driver(0)
+            except (usb.core.USBError, NotImplementedError):
+                pass
         try:
             dev.set_configuration()
-        except usb.core.USBError:
-            pass  # already configured (WinUSB)
+        except usb.core.USBError as e:
+            if e.errno == 13:  # EACCES
+                raise DeviceError(f"permission denied: {_access_hint()}") from e
+            # otherwise already configured (WinUSB / busy) - claiming below decides
         try:
             usb.util.claim_interface(dev, 0)
         except usb.core.USBError as e:
-            raise DeviceError(f"cannot claim interface ({e}); close the KMISE app first") from e
+            raise DeviceError(f"cannot claim interface ({e}); {_access_hint()}") from e
         self.drain()
 
     def close(self) -> None:

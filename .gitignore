@@ -1,0 +1,16 @@
+# Vendor software (proprietary; not ours to redistribute)
+*.exe
+*.rar
+# Unpacked vendor app, extracted QML and disassembly (regenerate with tools/)
+re/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+
+# Audio exports / captures
+*.wav
+*.pcapng

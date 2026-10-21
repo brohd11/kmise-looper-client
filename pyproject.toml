@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kmise"
+version = "0.1.0"
+description = "Open-source client for the YUER XS04 LOOP&DRUM looper (KMISE, lotmusic, Flamma, Donner)"
+requires-python = ">=3.10"
+dependencies = ["pyusb>=1.2", "libusb-package>=1.0.26", "click>=8"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+kmise = "kmise.cli:main"
+
+[tool.setuptools]
+packages = ["kmise"]

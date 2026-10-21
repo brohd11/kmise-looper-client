@@ -78,6 +78,11 @@ echo "export CGO_LDFLAGS=\"$ldflags\""
 if [ -n "${GITHUB_ENV:-}" ]; then
   {
     echo "PKG_CONFIG_PATH=$pc_path"
+    # Each `msys2 {0}` step is a login shell, and MSYS2's /etc/profile overwrites
+    # PKG_CONFIG_PATH. PKG_CONFIG_LIBDIR is left alone, so carry the path there too.
+    case "$os" in
+      MINGW*|MSYS*) echo "PKG_CONFIG_LIBDIR=$pc_path" ;;
+    esac
     echo "CGO_LDFLAGS=$ldflags"
     echo "CGO_ENABLED=1"
   } >> "$GITHUB_ENV"

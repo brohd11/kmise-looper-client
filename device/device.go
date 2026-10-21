@@ -88,8 +88,9 @@ func Open() (*Device, error) {
 		return nil, errorf("XS04 LOOP&DRUM not found (is it plugged in and powered on?)")
 	}
 	d.dev = dev
-	// Nothing should bind a vendor-class interface, but be safe. Unsupported on Windows.
-	if runtime.GOOS != "windows" {
+	// Nothing should bind a vendor-class interface, but be safe. Unsupported on Windows,
+	// and on macOS libusb's detach needs root even when no driver is attached.
+	if runtime.GOOS == "linux" {
 		_ = dev.SetAutoDetach(true)
 	}
 	// An unconfigured device (Linux, fresh plug) reports config 0; the pedal has one config.

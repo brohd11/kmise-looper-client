@@ -47,6 +47,11 @@ jobs:
           install: >-
             make zip bzip2 diffutils mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkgconf
 
+      # gousb resolves libusb through pkg-config; don't rely on the runner image having it.
+      - name: Install pkg-config (macOS)
+        if: runner.os == 'macOS'
+        run: command -v pkg-config >/dev/null || brew install pkgconf
+
       - name: Build static libusb
         run: |
           [ -n "$CC" ] || unset CC

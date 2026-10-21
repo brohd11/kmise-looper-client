@@ -60,6 +60,8 @@ Go, with [gousb](https://github.com/google/gousb) (cgo + libusb). Packages:
 Building needs a C compiler and a static libusb, which `scripts/build-libusb.sh` builds:
 
 ```sh
+# macOS:   xcode-select --install && brew install pkgconf
+# Linux:   apt install build-essential pkg-config bzip2   (or your distro's equivalent)
 # Windows: in an MSYS2 UCRT64 shell with
 #   pacman -S make bzip2 diffutils mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkgconf
 eval "$(bash scripts/build-libusb.sh .libusb)"
